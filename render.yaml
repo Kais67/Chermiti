@@ -1,0 +1,20 @@
+# Déploiement « Blueprint » sur Render (offre gratuite, sans carte bancaire)
+# ATTENTION : le disque d'un service gratuit est éphémère. La base SQLite est recréée avec les
+# données de démonstration à chaque redémarrage / réveil (ALLOW_DEMO_SEED). Voir docs/deploiement_render.md
+services:
+  - type: web
+    name: ecole-abou-el-kacem-chebbi
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/public/annonces
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOW_DEMO_SEED
+        value: "true"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DB_FILE
+        value: /tmp/school.db
+      - key: DEMO_PASSWORD
+        sync: false

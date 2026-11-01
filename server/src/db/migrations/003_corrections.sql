@@ -1,0 +1,12 @@
+ALTER TABLE users ADD COLUMN telephone TEXT;
+ALTER TABLE users ADD COLUMN adresse TEXT;
+ALTER TABLE eleves ADD COLUMN photo TEXT;
+ALTER TABLE evaluations ADD COLUMN type TEXT NOT NULL DEFAULT 'controle_continu' CHECK(type IN('controle_continu','examen'));
+ALTER TABLE messages ADD COLUMN piece TEXT;
+ALTER TABLE messages ADD COLUMN piece_nom TEXT;
+CREATE TABLE affectations(id INTEGER PRIMARY KEY, enseignant_id INTEGER NOT NULL REFERENCES users(id), matiere_id INTEGER NOT NULL REFERENCES matieres(id), classe_id INTEGER NOT NULL REFERENCES classes(id), annee_scolaire TEXT NOT NULL, UNIQUE(enseignant_id,matiere_id,classe_id,annee_scolaire));
+CREATE TABLE tarifs(id INTEGER PRIMARY KEY, niveau TEXT NOT NULL, libelle TEXT NOT NULL, montant_millimes INTEGER NOT NULL CHECK(montant_millimes>0), annee_scolaire TEXT NOT NULL, UNIQUE(niveau,libelle,annee_scolaire));
+CREATE TABLE depot_fichiers(id INTEGER PRIMARY KEY, depot_id INTEGER NOT NULL REFERENCES depots(id), fichier TEXT NOT NULL, nom TEXT NOT NULL);
+INSERT INTO depot_fichiers(depot_id,fichier,nom) SELECT id,fichier,original_name FROM depots;
+CREATE TABLE journal_envois(id INTEGER PRIMARY KEY, type TEXT NOT NULL, reference INTEGER, destinataire_id INTEGER NOT NULL, canal TEXT NOT NULL CHECK(canal IN('messagerie','email')), statut TEXT NOT NULL, detail TEXT, date TEXT NOT NULL DEFAULT(datetime('now')));
+CREATE INDEX idx_envois_ref ON journal_envois(type,reference);
