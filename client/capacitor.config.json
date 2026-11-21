@@ -1,0 +1,7 @@
+{
+  "appId": "tn.chermiti.ecoles",
+  "appName": "Chermiti Écoles",
+  "webDir": "dist",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}

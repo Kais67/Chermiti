@@ -30,14 +30,15 @@ function pictoMode(doc,k,cx,cy,s){const w='#ffffff';
  else if(k==='virement'){doc.polygon([cx-s,cy-s*0.2],[cx,cy-s],[cx+s,cy-s*0.2]).fill(w);for(const dx of[-0.65,-0.1,0.45])doc.rect(cx+s*dx,cy-s*0.1,s*0.28,s*0.7).fill(w);doc.rect(cx-s,cy+s*0.7,s*2,s*0.25).fill(w)}
  else if(k==='mobile_money'){doc.roundedRect(cx-s*0.5,cy-s,s,s*2,s*0.2).fill(w);doc.rect(cx-s*0.36,cy-s*0.75,s*0.72,s*1.2).fill(C.green);doc.circle(cx,cy+s*0.7,s*0.12).fill(C.green)}
  else{doc.roundedRect(cx-s,cy-s*0.62,s*2,s*1.24,s*0.18).fill(w);doc.rect(cx-s,cy-s*0.28,s*2,s*0.3).fill(C.green);doc.rect(cx-s*0.8,cy+s*0.25,s*0.7,s*0.18).fill(C.green)}}
-function base(res,name){const doc=new PDFDocument({size:'A4',margin:0,info:{Title:name,Author:'École Abou El Kacem Chebbi'}});
+let NOM='École'; // nom de l'école courante (positionné de façon synchrone au début de chaque génération de PDF)
+function base(res,name){const doc=new PDFDocument({size:'A4',margin:0,info:{Title:name,Author:NOM}});
  if(res.setHeader){res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition',`attachment; filename="${name}"`)}doc.pipe(res);return doc}
 function entete(doc,titre,sous,deco=true){doc.rect(0,0,595,104).fill(C.navy);doc.rect(0,104,595,4).fill(C.sun);logo(doc,36,22,60);
- T(doc,'École Abou El Kacem Chebbi',112,28,{size:21,font:B,color:C.white});T(doc,titre,112,58,{size:12,font:B,color:C.sun,spacing:1.5});T(doc,sous,112,77,{size:10,color:'#d7dcf0'});
+ T(doc,NOM,112,28,{size:21,font:B,color:C.white});T(doc,titre,112,58,{size:12,font:B,color:C.sun,spacing:1.5});T(doc,sous,112,77,{size:10,color:'#d7dcf0'});
  if(deco){star(doc,548,30,11,C.sun);star(doc,522,60,6,'#8f9cd1');star(doc,560,72,5,'#8f9cd1')}}
 function pied(doc,txt){doc.rect(0,812,595,1).fill(C.line);T(doc,txt,36,822,{size:7.5,color:C.gray,width:523,align:'center'})}
 
-function bulletin(res,data){const{eleve:e,trimestre:t,annee,m,absences:ab,etoiles}=data;const doc=base(res,`bulletin-${e.id}-T${t}.pdf`);
+function bulletin(res,data){NOM=data.ecole||'École';const{eleve:e,trimestre:t,annee,m,absences:ab,etoiles}=data;const doc=base(res,`bulletin-${e.id}-T${t}.pdf`);
  entete(doc,'BULLETIN SCOLAIRE',`Trimestre ${t}   •   Année scolaire ${annee}`);
  doc.roundedRect(36,124,523,76,12).fillAndStroke(C.cream,C.line);doc.circle(76,162,25).fill(C.coral);
  T(doc,((e.prenom||'?')[0]+(e.nom||'?')[0]).toUpperCase(),51,150,{size:20,font:B,color:C.white,width:50,align:'center'});
@@ -65,9 +66,9 @@ function bulletin(res,data){const{eleve:e,trimestre:t,annee,m,absences:ab,etoile
  y+=98;T(doc,"Appréciation de l'enseignant(e)",36,y,{size:10,font:B});
  for(const dy of[24,42]){doc.dash(2,{space:3}).moveTo(36,y+dy).lineTo(559,y+dy).lineWidth(0.8).strokeColor(C.line).stroke().undash()}
  y+=54;for(const[i,l]of[[0,'Signature de la Direction'],[1,'Signature du parent']]){doc.roundedRect(36+i*270,y,253,46,8).lineWidth(0.8).stroke(C.line);T(doc,l,46+i*270,y+6,{size:8,color:C.gray})}
- pied(doc,"Bulletin généré par l'application de gestion de l'École Abou El Kacem Chebbi");doc.end()}
+ pied(doc,`Bulletin généré par l'application de gestion de ${NOM}`);doc.end()}
 
-function recu(res,data){const{p,classe,total,reste,paye,code,eleve}=data;const doc=base(res,`recu-${p.id}.pdf`);
+function recu(res,data){NOM=data.ecole||'École';const{p,classe,total,reste,paye,code,eleve}=data;const doc=base(res,`recu-${p.id}.pdf`);
  entete(doc,'REÇU DE PAIEMENT',`Année scolaire ${p.annee_scolaire}`,false);
  doc.roundedRect(432,24,126,56,10).fill(C.navy2);T(doc,'N°',444,30,{size:9,font:B,color:C.sun});T(doc,String(p.id).padStart(6,'0'),440,44,{size:21,font:B,color:C.white,width:110,align:'center'});
  doc.roundedRect(36,128,523,108,14).fillAndStroke(C.greenBg,'#bfe3d3');
@@ -87,14 +88,15 @@ function recu(res,data){const{p,classe,total,reste,paye,code,eleve}=data;const d
  T(doc,"Vérifier l'authenticité de ce reçu",164,548,{size:11,font:B});T(doc,"Scannez le QR code, ou saisissez ce code sur la page de vérification du site de l'école.",164,564,{size:8.5,color:C.gray,width:190,wrap:true});
  T(doc,'CODE',164,596,{size:8,font:B,color:C.gray,spacing:1});T(doc,code,164,607,{size:17,font:B,color:C.navy,spacing:2});
  doc.roundedRect(36,672,260,86,10).lineWidth(0.8).stroke(C.line);T(doc,"Cachet et signature de l'école",48,680,{size:8.5,color:C.gray});
- T(doc,'Merci pour votre confiance.',320,700,{size:13,font:I,color:C.navy2,width:239,align:'right'});T(doc,"L'équipe de l'École Abou El Kacem Chebbi",320,720,{size:9,color:C.gray,width:239,align:'right'});
+ T(doc,'Merci pour votre confiance.',320,700,{size:13,font:I,color:C.navy2,width:239,align:'right'});T(doc,`L'équipe de ${NOM}`,320,720,{size:9,color:C.gray,width:239,align:'right'});
+ if(p.simule){doc.save();doc.rotate(-28,{origin:[300,430]});T(doc,'PAIEMENT DE TEST',40,385,{size:44,font:B,color:'#c0392b',width:520,align:'center'});T(doc,'AUCUN ARGENT RÉEL — SANS VALEUR COMPTABLE',40,440,{size:17,font:B,color:'#c0392b',width:520,align:'center'});doc.restore()}
  pied(doc,'Ce reçu est généré automatiquement. Toute modification du montant ou de la date invalide son code de vérification.');doc.end()}
 
-function bulletinData(db,eleveId,t,annee){const e=db.prepare('SELECT e.*,c.niveau,c.section,u.nom titulaire FROM eleves e LEFT JOIN classes c ON c.id=e.classe_id LEFT JOIN users u ON u.id=c.titulaire_id WHERE e.id=?').get(eleveId);if(!e)return null;
- const m=moyennes(db,eleveId,t,annee),ab=db.prepare('SELECT COUNT(*) total,COALESCE(SUM(justifiee),0) justifiees FROM absences WHERE eleve_id=? AND annee_scolaire=?').get(eleveId,annee);
- const et=db.prepare('SELECT COUNT(*) n FROM felicitations WHERE eleve_id=? AND annee_scolaire=?').get(eleveId,annee).n;return{eleve:e,trimestre:t,annee,m,absences:ab,etoiles:et}}
-function recuData(db,id){const p=db.prepare('SELECT * FROM paiements WHERE id=?').get(id);if(!p)return null;const eleve=db.prepare('SELECT nom,prenom,classe_id FROM eleves WHERE id=?').get(p.eleve_id);
- const cl=eleve.classe_id?db.prepare('SELECT niveau,section FROM classes WHERE id=?').get(eleve.classe_id):null;
- const total=db.prepare('SELECT COALESCE(SUM(montant_millimes),0) t FROM frais WHERE eleve_id=? AND annee_scolaire=?').get(p.eleve_id,p.annee_scolaire).t;
- return{p,eleve,classe:cl?`${cl.niveau} ${cl.section}`:'—',total,reste:p.solde_apres_millimes,paye:Math.max(0,total-p.solde_apres_millimes),code:codeRecu(p)}}
+async function bulletinData(db, eleveId, t, annee) {const e=await db.prepare('SELECT e.*,c.niveau,c.section,u.nom titulaire FROM eleves e LEFT JOIN classes c ON c.id=e.classe_id LEFT JOIN users u ON u.id=c.titulaire_id WHERE e.id=?').get(eleveId);if(!e)return null;
+ const m=await moyennes(db,eleveId,t,annee),ab=await db.prepare('SELECT COUNT(*) total,COALESCE(SUM(justifiee),0) justifiees FROM absences WHERE eleve_id=? AND annee_scolaire=?').get(eleveId,annee);
+ const et=(await db.prepare('SELECT COUNT(*) n FROM felicitations WHERE eleve_id=? AND annee_scolaire=?').get(eleveId,annee)).n;return{ecole:db.ecoleNom,eleve:e,trimestre:t,annee,m,absences:ab,etoiles:et}}
+async function recuData(db, id) {const p=await db.prepare('SELECT * FROM paiements WHERE id=?').get(id);if(!p)return null;const eleve=await db.prepare('SELECT nom,prenom,classe_id FROM eleves WHERE id=?').get(p.eleve_id);
+ const cl=eleve.classe_id?await db.prepare('SELECT niveau,section FROM classes WHERE id=?').get(eleve.classe_id):null;
+ const total=(await db.prepare('SELECT COALESCE(SUM(montant_millimes),0) t FROM frais WHERE eleve_id=? AND annee_scolaire=?').get(p.eleve_id,p.annee_scolaire)).t;
+ return{ecole:db.ecoleNom,p,eleve,classe:cl?`${cl.niveau} ${cl.section}`:'—',total,reste:p.solde_apres_millimes,paye:Math.max(0,total-p.solde_apres_millimes),code:codeRecu(p)}}
 module.exports={bulletin,recu,bulletinData,recuData};
