@@ -34,3 +34,10 @@ Sans cette configuration, aucun e-mail n'est envoyé : l'administrateur transmet
 
 ## Passer en production réelle
 Disque persistant, `ALLOW_DEMO_SEED` supprimé, premier administrateur créé avec `npm run create-admin`, sauvegardes quotidiennes (`npm run backup`).
+
+
+---
+## Production persistante (PostgreSQL) — à activer seulement après accord
+La démonstration gratuite ci-dessus (`render.yaml`, SQLite éphémère) reste inchangée. La production utilise **`render.production.yaml`**
+(PostgreSQL + service toujours actif) : voir `docs/architecture_multi_ecoles.md` et le tableau des coûts dans `docs/etat_avancement.md`.
+Ne mettez jamais de vraies données sur la base PostgreSQL **gratuite** de Render : elle expire après 30 jours et n'est pas sauvegardée.

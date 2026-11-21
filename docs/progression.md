@@ -4,3 +4,5 @@
 **Ajouts récents :** menu groupé, règles de cohérence, paiement en ligne (simulation), thèmes de matières, bulletin et reçu illustrés avec QR, étoiles, aide à symboles.
 **Tests automatisés :** 13 suites (rôles, moyennes, paiement, immuabilité, conflits, messagerie, validation, migrations).
 **Reste / améliorations :** e-mail SMTP, push PWA, import Excel, photos d'élèves, passage automatisé à l'année suivante, tests d'interface.
+
+> Évolution multi-écoles (PostgreSQL, paiements, langues, Android) : voir [etat_avancement.md](etat_avancement.md).

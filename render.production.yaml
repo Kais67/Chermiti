@@ -1,0 +1,43 @@
+# Blueprint de PRODUCTION (PostgreSQL persistant) — À NE PAS appliquer sans l'accord du propriétaire : il entraîne des frais mensuels.
+# render.yaml (démonstration gratuite, SQLite éphémère) reste inchangé et actif.
+# Pour l'utiliser : Render → New → Blueprint → choisir ce fichier (« Blueprint file path » = render.production.yaml).
+# Coûts indicatifs (vérifier sur render.com/pricing avant d'activer) : Postgres basic-256mb ≈ 6 $/mois + stockage, service web starter ≈ 7 $/mois.
+# La base PostgreSQL GRATUITE de Render expire après 30 jours et n'a aucune sauvegarde : ne pas l'utiliser pour de vraies données.
+databases:
+  - name: plateforme-db            # héberge PlatformDB ; chaque école reçoit sa propre base (CREATE DATABASE) sur la même instance
+    databaseName: plateforme
+    user: plateforme
+    plan: basic-256mb
+services:
+  - type: web
+    name: multi-ecoles
+    runtime: docker
+    plan: starter                  # service toujours actif (le plan free se met en veille et perd ses fichiers)
+    healthCheckPath: /api/sante
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TENANT_SECRET         # chiffre les URL des bases d'écoles. NOTEZ-LE hors de Render : le perdre rend les bases illisibles
+        generateValue: true
+      - key: PLATFORM_DATABASE_URL
+        fromDatabase: { name: plateforme-db, property: connectionString }
+      - key: PG_ADMIN_URL          # même instance : sert à créer la base de chaque nouvelle école
+        fromDatabase: { name: plateforme-db, property: connectionString }
+      - key: PUBLIC_URL            # ex. https://multi-ecoles.onrender.com (ou domaine personnalisé) — obligatoire en HTTPS pour le paiement réel
+        sync: false
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SUPER_ADMIN_PASSWORD  # 10 caractères minimum ; à supprimer de Render après le premier démarrage
+        sync: false
+      - key: UPLOADS_DIR
+        value: /data/uploads
+    # Fichiers déposés (photos, devoirs, pièces jointes) : un disque persistant est PAYANT. Décommentez après accord du propriétaire,
+    # ou remplacez par un stockage objet (voir docs/etat_avancement.md).
+    # disk:
+    #   name: fichiers
+    #   mountPath: /data
+    #   sizeGB: 1

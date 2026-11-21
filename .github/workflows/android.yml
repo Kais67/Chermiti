@@ -1,0 +1,52 @@
+# Construit l'APK de test et le bundle AAB de l'application Android (gratuit : exécuté par GitHub, aucun achat).
+# Déclenchement : manuel (onglet Actions → « Android » → Run workflow) ou sur étiquette « android-v* ».
+# Variables du dépôt (Settings → Secrets and variables → Actions → Variables) : API_URL = adresse HTTPS du serveur de la plateforme.
+# Secrets (facultatifs, nécessaires uniquement pour un AAB signé acceptable par Google Play) : KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD.
+name: Android
+on:
+  workflow_dispatch:
+    inputs:
+      version_code: { description: "versionCode (entier croissant)", default: "1" }
+      version_name: { description: "versionName", default: "0.1.0" }
+  push:
+    tags: ['android-v*']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: ${{ vars.API_URL }}
+      APP_VERSION_CODE: ${{ inputs.version_code || '1' }}
+      APP_VERSION_NAME: ${{ inputs.version_name || '0.1.0' }}
+      A_UNE_CLE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: android-actions/setup-android@v3
+      - name: Vérifier l'adresse du serveur
+        run: |
+          if [ -z "$VITE_API_URL" ]; then echo "::error::Définissez la variable de dépôt API_URL (https://…)"; exit 1; fi
+          case "$VITE_API_URL" in https://*) ;; *) echo "::error::API_URL doit commencer par https://"; exit 1;; esac
+      - name: Installer et compiler le client web
+        working-directory: client
+        run: npm install && npm test && npm run build:android
+      - name: Restaurer la clé de signature (si fournie)
+        if: env.A_UNE_CLE == 'true'
+        run: echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.jks" && echo "KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+        env:
+          KS: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: Construire APK de test et AAB
+        working-directory: client/android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew --no-daemon assembleDebug bundleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ env.APP_VERSION_NAME }}
+          path: |
+            client/android/app/build/outputs/apk/debug/*.apk
+            client/android/app/build/outputs/bundle/release/*.aab

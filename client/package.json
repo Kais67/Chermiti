@@ -1,3 +1,35 @@
-{"name":"ecole-client","private":true,"version":"1.0.0","type":"module","scripts":{"dev":"vite","build":"vite build","preview":"vite preview"},
-"dependencies":{"@fontsource-variable/fraunces":"^5.0.0","@fontsource-variable/nunito":"^5.0.0","react":"^18.3.1","react-dom":"^18.3.1","react-router-dom":"^6.26.0"},
-"devDependencies":{"@vitejs/plugin-react":"^4.3.0","vite":"^5.4.0"}}
+{
+  "name": "ecole-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/i18n.test.mjs",
+    "i18n:cles": "node scripts/i18n-cles.cjs",
+    "i18n:verifier": "node scripts/i18n-cles.cjs --verifier --strict --liste",
+    "build:android": "vite build && cap sync android",
+    "android:ouvrir": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/ios": "^8.6.2",
+    "@fontsource-variable/fraunces": "^5.0.0",
+    "@fontsource-variable/noto-sans-arabic": "^5.3.0",
+    "@fontsource-variable/nunito": "^5.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.2",
+    "@vitejs/plugin-react": "^4.3.0",
+    "jscodeshift": "^17.4.0",
+    "sharp": "^0.35.5",
+    "vite": "^5.4.0"
+  }
+}

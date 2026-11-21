@@ -1,9 +1,11 @@
 # École Abou El Kacem Chebbi : gestion d'école primaire
 
-Application web mono-école : React + Vite (interface), Node.js + Express (API), **SQLite** (`better-sqlite3`).
+Plateforme **multi-écoles** : React + Vite (interface web FR/AR/EN, application Android via Capacitor), Node.js + Express (API), **PostgreSQL** en production (PlatformDB + une base par école) ; SQLite uniquement pour les tests locaux et la démonstration.
+
+➡ État d'avancement, décisions à prendre et coûts : [`docs/etat_avancement.md`](docs/etat_avancement.md) · architecture : [`docs/architecture_multi_ecoles.md`](docs/architecture_multi_ecoles.md) · paiements : [`docs/paiements.md`](docs/paiements.md) · langues : [`docs/i18n.md`](docs/i18n.md) · Android : [`docs/android.md`](docs/android.md).
 
 ## Installation (Windows, macOS, Linux)
-Prérequis : **Node.js 22 ou plus récent** (exigé par better-sqlite3 v13), npm, Git facultatif.
+Prérequis : **Node.js 22 ou plus récent** (22 LTS ou 24), npm. Aucun outil de compilation n’est requis : si `better-sqlite3` (optionnel) ne s’installe pas, le projet utilise automatiquement le SQLite intégré à Node.
 ```
 npm run install:all
 copy .env.example .env          (Windows)   |   cp .env.example .env   (macOS/Linux)
@@ -21,7 +23,7 @@ Comptes de démonstration (mot de passe `Demo2026!`) : `admin@ecole.demo`, `prof
 Pour un usage réel : n'exécutez pas `seed`, créez le premier administrateur avec `npm run create-admin`.
 
 ## Tests, documentation API
-`npm test` · Swagger : http://localhost:3000/api/docs
+`npm test` (SQLite) · avec PostgreSQL : `TEST_PG_URL=postgres://utilisateur:mdp@localhost:5432/postgres npm test --prefix server` · Swagger : http://localhost:3000/api/docs?ecole=<code>
 
 ## Données, sauvegarde, restauration
 - Base : `server/data/school.db` (créée automatiquement, jamais effacée au démarrage). Fichiers téléversés : `server/uploads/`.

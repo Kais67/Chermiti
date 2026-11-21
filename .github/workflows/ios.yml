@@ -1,0 +1,66 @@
+# Application iOS (Capacitor). Nécessite un Mac : on utilise un exécuteur macOS de GitHub (aucun Mac à acheter).
+# Job 1 (toujours) : vérifie que l'app COMPILE pour le simulateur iOS, sans compte Apple.
+# Job 2 (facultatif) : produit un IPA signé pour TestFlight / App Store — exige un compte Apple Developer payant et les secrets ci-dessous :
+#   IOS_CERT_P12_BASE64 (certificat de distribution .p12), IOS_CERT_PASSWORD, IOS_PROFILE_BASE64 (profil de provisionnement App Store), IOS_TEAM_ID, IOS_PROFILE_NAME
+# Variable du dépôt : API_URL = adresse HTTPS du serveur. Déclenchement manuel : Actions → iOS → Run workflow.
+# NON TESTÉ sur un vrai compte Apple : un premier essai peut demander des ajustements.
+name: iOS
+on:
+  workflow_dispatch:
+    inputs:
+      build_number: { description: "Numéro de build (entier croissant)", default: "1" }
+      version_name: { description: "Version affichée", default: "0.1.0" }
+jobs:
+  simulateur:
+    runs-on: macos-latest
+    env: { VITE_API_URL: "${{ vars.API_URL }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Vérifier l'adresse du serveur
+        run: |
+          if [ -z "$VITE_API_URL" ]; then echo "::error::Définissez la variable de dépôt API_URL (https://…)"; exit 1; fi
+          case "$VITE_API_URL" in https://*) ;; *) echo "::error::API_URL doit commencer par https://"; exit 1;; esac
+      - name: Compiler le client web et synchroniser iOS
+        working-directory: client
+        run: npm install && npm test && npx vite build && npx cap sync ios
+      - name: Compiler pour le simulateur
+        working-directory: client/ios/App
+        run: xcodebuild build -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+  ipa-signe:
+    needs: simulateur
+    runs-on: macos-latest
+    if: ${{ vars.IOS_SIGNATURE == 'oui' }}   # définir la variable de dépôt IOS_SIGNATURE=oui quand les secrets sont en place
+    env: { VITE_API_URL: "${{ vars.API_URL }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Client web
+        working-directory: client
+        run: npm install && npx vite build && npx cap sync ios
+      - name: Certificat et profil
+        env:
+          CERT: ${{ secrets.IOS_CERT_P12_BASE64 }}
+          CERT_PWD: ${{ secrets.IOS_CERT_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROFILE_BASE64 }}
+        run: |
+          KC="$RUNNER_TEMP/build.keychain-db"; security create-keychain -p tmp "$KC"; security set-keychain-settings -lut 3600 "$KC"; security unlock-keychain -p tmp "$KC"
+          echo "$CERT" | base64 -d > "$RUNNER_TEMP/cert.p12"; security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PWD" -A -t cert -f pkcs12 -k "$KC"
+          security set-key-partition-list -S apple-tool:,apple: -k tmp "$KC"; security list-keychains -d user -s "$KC" login.keychain
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles; echo "$PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
+      - name: Archive et export IPA
+        working-directory: client/ios/App
+        env: { TEAM: "${{ secrets.IOS_TEAM_ID }}", PROFILE_NAME: "${{ secrets.IOS_PROFILE_NAME }}", BN: "${{ inputs.build_number }}", VN: "${{ inputs.version_name }}" }
+        run: |
+          xcodebuild archive -project App.xcodeproj -scheme App -configuration Release -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" CODE_SIGN_IDENTITY="Apple Distribution" CURRENT_PROJECT_VERSION="$BN" MARKETING_VERSION="$VN"
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict>
+          <key>method</key><string>app-store-connect</string><key>teamID</key><string>$TEAM</string><key>signingStyle</key><string>manual</string>
+          <key>provisioningProfiles</key><dict><key>tn.chermiti.ecoles</key><string>$PROFILE_NAME</string></dict></dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportPath "$RUNNER_TEMP/ipa" -exportOptionsPlist "$RUNNER_TEMP/export.plist"
+      - uses: actions/upload-artifact@v4
+        with: { name: ios-ipa, path: "${{ runner.temp }}/ipa/*.ipa" }

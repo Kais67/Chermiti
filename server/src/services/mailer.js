@@ -10,7 +10,7 @@ async function envoyer(to,subject,text){
  if(process.env.BREVO_API_KEY){
   if(!FROM())return{statut:'echec',detail:"MAIL_FROM manquant (adresse expéditeur validée chez Brevo)"};
   try{const r=await fetch(process.env.BREVO_API_URL||'https://api.brevo.com/v3/smtp/email',{method:'POST',signal:AbortSignal.timeout(15000),headers:{'api-key':process.env.BREVO_API_KEY,'content-type':'application/json',accept:'application/json'},
-    body:JSON.stringify({sender:{name:process.env.MAIL_FROM_NAME||'École Abou El Kacem Chebbi',email:FROM()},to:[{email:to}],subject,textContent:text})});
+    body:JSON.stringify({sender:{name:process.env.MAIL_FROM_NAME||'Gestion scolaire',email:FROM()},to:[{email:to}],subject,textContent:text})});
    if(!r.ok)return{statut:'echec',detail:`Brevo ${r.status} : ${(await r.text()).slice(0,200)}`};return{statut:'envoye'}}catch(e){return{statut:'echec',detail:e.message}}}
  const tr=transport();if(!tr)return{statut:'non_configure'};
  try{await tr.sendMail({from:FROM(),to,subject,text});return{statut:'envoye'}}catch(e){return{statut:'echec',detail:e.message}}}
