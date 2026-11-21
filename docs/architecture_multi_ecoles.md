@@ -35,3 +35,11 @@ Ne jamais modifier la production sans avoir vérifié la sauvegarde.
 
 ## Sécurité
 Mots de passe en bcrypt ; clés de paiement et URL de bases chiffrées (AES-256-GCM) ; limitation des tentatives de connexion ; rôles contrôlés côté serveur ; audit des actions sensibles. Isolation renforcée possible (non activée) : un rôle PostgreSQL distinct par école.
+
+## Accès au super-administrateur une fois la plateforme hébergée
+* **Adresse** : `https://VOTRE-SITE/plateforme` (Render : `https://xxx.onrender.com/plateforme`, Google Cloud : `https://xxx.run.app/plateforme`).
+* **Identifiants** : ceux des variables `SUPER_ADMIN_EMAIL` et `SUPER_ADMIN_PASSWORD` (Render : onglet *Environment* ; Google Cloud : le script `deploy.sh` affiche le mot de passe temporaire à la fin). Le compte est créé **au premier démarrage** si aucun super-administrateur n'existe.
+* **Changer le mot de passe** : dans la console, « Changer mon mot de passe » (à faire dès la première connexion en production).
+* **Mot de passe oublié** : ajouter la variable `SUPER_ADMIN_FORCE_RESET=true`, mettre le nouveau mot de passe dans `SUPER_ADMIN_PASSWORD` (10 caractères minimum), redéployer, se connecter, puis **supprimer** `SUPER_ADMIN_FORCE_RESET`. (Avec un terminal : `npm run superadmin:creer --prefix server` fait la même chose.)
+* **Démonstration Render gratuite** (SQLite) : la base est recréée à chaque redémarrage, le mot de passe est donc toujours celui des variables d'environnement.
+* Ne laissez jamais le mot de passe de démonstration `SuperDemo#2026` sur un site réel.

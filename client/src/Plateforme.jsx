@@ -8,7 +8,7 @@ async function pf(path,{method='GET',body}={}){const t=sessionStorage.getItem(K)
 const PLANS=['essai','standard','premium'];
 const expire=e=>e.fin_abonnement&&e.fin_abonnement<new Date().toISOString().slice(0,10);
 export default function Plateforme(){
- const[ok,setOk]=useState(!!sessionStorage.getItem(K)),[l,setL]=useState({email:'',password:''}),[m,setM]=useState(null),[liste,setListe]=useState([]),[st,setSt]=useState({}),[ed,setEd]=useState(null),[mdp,setMdp]=useState(null),
+ const[mp,setMp]=useState(null),[ok,setOk]=useState(!!sessionStorage.getItem(K)),[l,setL]=useState({email:'',password:''}),[m,setM]=useState(null),[liste,setListe]=useState([]),[st,setSt]=useState({}),[ed,setEd]=useState(null),[mdp,setMdp]=useState(null),
   [f,setF]=useState({slug:'',nom:'',langue_defaut:'fr',plan:'essai',fin:'',contactNom:'',contactEmail:'',email:'',password:'',adminNom:''}),[busy,setBusy]=useState(false);
  const charger=()=>pf('/ecoles').then(setListe).catch(e=>setM({t:e.message}));
  useEffect(()=>{if(ok)charger()},[ok]);
@@ -18,11 +18,13 @@ export default function Plateforme(){
  const maj=async(e,body,ok)=>{try{await pf('/ecoles/'+e.slug,{method:'PUT',body});if(ok)setM({ok:1,t:ok});setEd(null);charger()}catch(x){setM({t:x.message})}};
  const stats=async e=>{try{setSt({...st,[e.slug]:await pf(`/ecoles/${e.slug}/stats`)})}catch(x){setM({t:x.message})}};
  const reinit=async e=>{if(!window.confirm(tt("Générer un nouveau mot de passe temporaire pour l'administrateur de cette école ? L'ancien ne fonctionnera plus.")))return;try{setMdp({...(await pf(`/ecoles/${e.slug}/reinitialiser-admin`,{method:'POST',body:{}})),ecole:e.nom})}catch(x){setM({t:x.message})}};
+ const chmdp=async e=>{e.preventDefault();try{await pf('/mot-de-passe',{method:'POST',body:{actuel:mp.a,nouveau:mp.n}});setMp(null);setM({ok:1,t:tt('Mot de passe changé.')})}catch(x){setM({t:x.message})}};
  const ouvrir=e=>{localStorage.setItem('ecole',e.slug);window.open('/','_blank')};
  const msg=m&&<p className={'msg '+(m.ok?'ok':'err')} role={m.ok?'status':'alert'}>{m.t}</p>;
  if(!ok)return<main className="landing"><div className="carte" style={{maxWidth:420,margin:'10vh auto'}}><SelecteurLangue/><h1 style={{fontSize:'1.4rem'}}>{tt('Console de la plateforme')}</h1>
-  <form onSubmit={login}><label><span>{tt('E-mail')}</span><input type="email" required value={l.email} onChange={e=>setL({...l,email:e.target.value})}/></label><label><span>{tt('Mot de passe')}</span><input type="password" required value={l.password} onChange={e=>setL({...l,password:e.target.value})}/></label>{msg}<button className="btn">{tt('Se connecter')}</button></form></div></main>;
- return<main className="landing" style={{maxWidth:1100,margin:'0 auto',padding:16}}><div className="barre-langue"><SelecteurLangue/><button className="lien" onClick={()=>{sessionStorage.removeItem(K);location.reload()}}>{tt('Déconnexion')}</button></div>
+  <form onSubmit={login}><label><span>{tt('E-mail')}</span><input type="email" required value={l.email} onChange={e=>setL({...l,email:e.target.value})}/></label><label><span>{tt('Mot de passe')}</span><input type="password" required value={l.password} onChange={e=>setL({...l,password:e.target.value})}/></label>{msg}<button className="btn">{tt('Se connecter')}</button></form><p style={{marginTop:'1rem'}}><a href="/">{tt('↩️ Retour à l\'accueil')}</a></p></div></main>;
+ return<main className="landing" style={{maxWidth:1100,margin:'0 auto',padding:16}}><div className="barre-langue"><SelecteurLangue/><span><button className="lien" onClick={()=>setMp(mp?null:{a:'',n:''})}>{tt('Changer mon mot de passe')}</button> <button className="lien" onClick={()=>{sessionStorage.removeItem(K);location.reload()}}>{tt('Déconnexion')}</button></span></div>
+  {mp&&<form className="carte" onSubmit={chmdp}><label><span>{tt('Mot de passe actuel')}</span><input type="password" required autoComplete="current-password" value={mp.a} onChange={e=>setMp({...mp,a:e.target.value})}/></label><label><span>{tt('Mot de passe (10 caractères minimum)')}</span><input type="password" required minLength={10} autoComplete="new-password" value={mp.n} onChange={e=>setMp({...mp,n:e.target.value})}/></label><button className="btn">{tt('Enregistrer')}</button></form>}
   <h1>{tt('Écoles de la plateforme')}</h1>{msg}
   {mdp&&<div className="note ok" role="status"><b>{mdp.ecole}</b> — {tt('Nouveau mot de passe temporaire pour {0} : {1} — affiché une seule fois : notez-le et transmettez-le à l\'utilisateur.{2}',{0:mdp.email,1:mdp.mot_de_passe_temporaire,2:''})} <button className="lien" onClick={()=>setMdp(null)}>{tt('Fermer')}</button></div>}
   <div className="carte"><div className="tablewrap"><table className="tableau"><thead><tr><th>{tt('Code')}</th><th>{tt('Nom')}</th><th>{tt('Plan')}</th><th>{tt("Fin d'abonnement")}</th><th>{tt('Statut')}</th><th></th></tr></thead>

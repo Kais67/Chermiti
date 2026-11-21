@@ -20,6 +20,10 @@ module.exports=function plateforme(tenants){
   if(!sa||!(await bcrypt.compare(d.password,sa.password_hash))){a.push(Date.now());login.set(q.ip,a);throw err(401,'Identifiants incorrects')}
   r.json({token:signSA(sa),admin:{id:sa.id,nom:sa.nom}})});
  const sa=(q,r,n)=>{try{const t=jwt.verify((q.headers.authorization||'').replace('Bearer ',''),secret());if(t.role!=='super_admin'||t.ec!=='*plateforme')throw 0;q.sa=t;n()}catch{r.status(401).json({erreur:'Non authentifié'})}};
+ router.post('/mot-de-passe',sa,async(q,r)=>{const d=parse(z.object({actuel:z.string().min(1),nouveau:z.string().min(10,'10 caractères minimum')}),q.body);
+  const u=await p.prepare('SELECT * FROM super_admins WHERE id=?').get(q.sa.id);if(!u||!(await bcrypt.compare(d.actuel,u.password_hash)))throw err(400,'Mot de passe actuel incorrect');
+  if(d.actuel===d.nouveau)throw err(400,'Le nouveau mot de passe doit être différent');
+  await p.prepare('UPDATE super_admins SET password_hash=? WHERE id=?').run(await bcrypt.hash(d.nouveau,12),u.id);await tenants.audit(u.id,'changer_mot_de_passe_super_admin',null);r.json({ok:true})});
  router.get('/ecoles',sa,async(q,r)=>r.json(await tenants.list()));
  router.post('/ecoles',sa,async(q,r)=>{const d=parse(z.object({slug:z.string(),nom:z.string().min(1),langue_defaut:z.enum(['fr','ar','en']).optional(),database_url:z.string().optional(),plan:z.enum(['essai','standard','premium']).optional(),fin_abonnement:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),contact:z.object({nom:z.string().optional(),email:z.string().email().optional()}).optional(),admin:z.object({email:z.string().email(),password:z.string().min(10),nom:z.string().optional()})}),q.body);
   r.status(201).json(await tenants.provision({slug:d.slug,nom:d.nom,langue:d.langue_defaut,databaseUrl:d.database_url,admin:d.admin,superAdminId:q.sa.id,plan:d.plan,finAbonnement:d.fin_abonnement,contact:d.contact}))});

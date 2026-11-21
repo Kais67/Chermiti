@@ -10,7 +10,7 @@ export function Landing({onLogin}){
  const pre=async e=>{e.preventDefault();try{await api('/public/preinscriptions',{method:'POST',body:p});setP({consentement:false});setM({ok:1,t:tt('Pré-inscription envoyée. L\'administration vous contactera par e-mail.'),k:'p'})}catch(x){setM({t:x.message,k:'p'})}};
  const set=(o,s)=>k=>e=>s({...o,[k]:e.target.value});
  return (
-  <div className="landing"><div className="barre-langue"><SelecteurLangue/>{localStorage.getItem('ecole')&&<button type="button" className="lien" onClick={changerEcole}>{tt("Changer d'école")}</button>}</div><header className="hero"><img src="/logo.svg" alt="" width="72" height="72"/><div><p className="kicker">{tt('Année scolaire 2026–2027')}</p><h1>{tt('École primaire')}<br/><em>{ecole.nom}</em></h1><p className="lead">{tt(
+  <div className="landing"><div className="barre-langue"><SelecteurLangue/>{localStorage.getItem('ecole')&&<button type="button" className="btn-ecole" onClick={changerEcole}><span aria-hidden="true">🏫</span> {tt("Changer d'école")}</button>}</div><header className="hero"><img src="/logo.svg" alt="" width="72" height="72"/><div><p className="kicker">{tt('Année scolaire 2026–2027')}</p><h1>{tt('École primaire')}<br/><em>{ecole.nom}</em></h1><p className="lead">{tt(
     'Notes, devoirs, paiements et messages : tout le suivi de vos enfants, au même endroit.'
    )}</p></div></header>
    <main className="deux"><form className="carte tampon" onSubmit={login}><h2>{tt('Se connecter')}</h2><label><span>{tt('Adresse e-mail')}</span><input type="email" required autoComplete="username" value={l.email} onChange={set(l,setL)('email')}/></label>
@@ -21,7 +21,7 @@ export function Landing({onLogin}){
     <label className="check"><input type="checkbox" checked={p.consentement} onChange={e=>setP({...p,consentement:e.target.checked})}/> {tt(
       'Je consens, en tant que parent ou tuteur, au traitement des données de mon enfant pour la gestion de sa scolarité (RGPD).'
      )}</label>
-    {m?.k==='p'&&<Msg m={m}/>}<button className="btn corail">{tt('Envoyer la demande')}</button></form></div>
+    {m?.k==='p'&&<Msg m={m}/>}<button className="btn corail">{tt('Envoyer la demande')}</button></form><a className="acces-plateforme" href="/plateforme" title={tt('Console de la plateforme')}><span aria-hidden="true">🔐</span> {tt('Espace plateforme')}</a></div>
  );}
 
 const tuile=(to,ic,t,c,badge)=><Link key={to} to={to} className="tuile" style={{'--c':c}} title={t}><span className="tic" aria-hidden="true">{ic}</span><b>{t}</b>{badge!==undefined&&badge!==null&&badge!==0&&badge!==''&&<span className="badge">{badge}</span>}</Link>;

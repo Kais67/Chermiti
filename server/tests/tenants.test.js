@@ -68,3 +68,18 @@ test('URL de base par école : TCP classique et socket Cloud SQL',()=>{
  assert.equal(avecBase('postgres://u:p%40x@/plateforme?host=/cloudsql/proj:europe-west1:inst','ecole_a'),'postgres://u:p%40x@/ecole_a?host=/cloudsql/proj:europe-west1:inst');
  assert.equal(avecBase('postgresql://u:p@h/postgres?sslmode=require','ecole_a'),'postgresql://u:p@h/ecole_a?sslmode=require');
  assert.throws(()=>avecBase('mysql://x','y'))});
+
+test('super-administrateur : changer son mot de passe ; réinitialisation forcée au démarrage',async()=>{
+ const lg=(pw)=>call('POST','/api/plateforme/login',null,{email:'root@plateforme.tn',password:pw});
+ const sa=(await lg('SuperSecret123')).j.token;
+ assert.equal((await call('POST','/api/plateforme/mot-de-passe',null,{actuel:'x',nouveau:'NouveauMdp-12345'})).s,401);
+ assert.equal((await call('POST','/api/plateforme/mot-de-passe',sa,{actuel:'faux',nouveau:'NouveauMdp-12345'})).s,400,'ancien mot de passe faux');
+ assert.equal((await call('POST','/api/plateforme/mot-de-passe',sa,{actuel:'SuperSecret123',nouveau:'court'})).s,400,'trop court');
+ assert.equal((await call('POST','/api/plateforme/mot-de-passe',sa,{actuel:'SuperSecret123',nouveau:'NouveauMdp-12345'})).s,200);
+ assert.equal((await lg('SuperSecret123')).s,401,'ancien mot de passe refusé');assert.equal((await lg('NouveauMdp-12345')).s,200);
+ // mot de passe perdu : réinitialisation forcée par variable d'environnement (sans terminal)
+ const main=require('../src/main');process.env.SUPER_ADMIN_EMAIL='root@plateforme.tn';process.env.SUPER_ADMIN_PASSWORD='Reinitialise-98765';
+ const{openPlatform}=require('../src/plateforme/tenants');
+ assert.equal((await lg('Reinitialise-98765')).s,401,'sans FORCE_RESET le mot de passe ne change pas');
+ process.env.SUPER_ADMIN_FORCE_RESET='true';await main.bootstrapSuperAdmin(srvObj.platform);delete process.env.SUPER_ADMIN_FORCE_RESET;
+ assert.equal((await lg('Reinitialise-98765')).s,200,'mot de passe réinitialisé');assert.equal((await lg('NouveauMdp-12345')).s,401)});

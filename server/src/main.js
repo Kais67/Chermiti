@@ -1,12 +1,16 @@
 // Assemblage du serveur multi-écoles : PlatformDB + répartiteur + client web.
 const path=require('path'),fs=require('fs'),express=require('express'),helmet=require('helmet'),bcrypt=require('bcryptjs');
 const{Tenants,openPlatform}=require('./plateforme/tenants'),plateforme=require('./plateforme');
+// Super-administrateur de la plateforme. SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD créent le compte au premier démarrage (aucun existant).
+// Mot de passe perdu : ajouter SUPER_ADMIN_FORCE_RESET=true (avec le nouveau SUPER_ADMIN_PASSWORD), redémarrer, puis RETIRER cette variable.
 async function bootstrapSuperAdmin(p){
- const e=process.env.SUPER_ADMIN_EMAIL,pw=process.env.SUPER_ADMIN_PASSWORD;
- if(!e||!pw||(await p.prepare('SELECT COUNT(*) n FROM super_admins').get()).n>0)return;
+ const e=(process.env.SUPER_ADMIN_EMAIL||'').trim(),pw=process.env.SUPER_ADMIN_PASSWORD;if(!e||!pw)return;
+ const n=(await p.prepare('SELECT COUNT(*) n FROM super_admins').get()).n,force=process.env.SUPER_ADMIN_FORCE_RESET==='true';
+ if(n>0&&!force)return;
  if(pw.length<10)return console.error('SUPER_ADMIN_PASSWORD : 10 caractères minimum, super-administrateur non créé');
- await p.prepare('INSERT INTO super_admins(email,password_hash,nom) VALUES(?,?,?)').run(e.trim(),await bcrypt.hash(pw,12),'Super administrateur');console.log('Super-administrateur créé :',e)}
-
+ const h=await bcrypt.hash(pw,12),ex=await p.prepare('SELECT id FROM super_admins WHERE lower(email)=lower(?)').get(e);
+ if(ex){await p.prepare('UPDATE super_admins SET password_hash=? WHERE id=?').run(h,ex.id);console.log('Mot de passe du super-administrateur réinitialisé :',e,'— retirez maintenant SUPER_ADMIN_FORCE_RESET')}
+ else{await p.prepare('INSERT INTO super_admins(email,password_hash,nom) VALUES(?,?,?)').run(e,h,'Super administrateur');console.log('Super-administrateur créé :',e)}}
 // CORS pour l'application Android (WebView : https://localhost) et d'éventuels clients autorisés (CORS_ORIGINS=https://a.tn,https://b.tn)
 const ORIGINES=new Set(['https://localhost','capacitor://localhost','http://localhost',...(process.env.CORS_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean)]);
 function cors(q,r,n){const o=q.headers.origin;
@@ -36,4 +40,4 @@ async function createServer({platformTarget}={}){
  if(fs.existsSync(dist)){app.use(helmet({contentSecurityPolicy:false}));app.use(express.static(dist));app.use((q,r,n)=>q.method==='GET'&&!q.path.startsWith('/api')&&!/\.[a-z0-9]+$/i.test(q.path)?r.sendFile(path.join(dist,'index.html')):n())}
  app.use((e,q,r,n)=>{if(!e.status||e.status>=500)console.error('[ERREUR]',q.method,q.originalUrl,e);r.status(e.status||500).json({erreur:e.status?e.message:'Erreur interne',code:e.code})});
  return{app,platform,tenants}}
-module.exports={createServer};
+module.exports={createServer,bootstrapSuperAdmin};
